@@ -12,3 +12,4 @@ Objective:
 - Ideally, I can connect a powerbi dashboard to the SQL database (storing all the information).
 
 Along with this, I would expect a documentation on how, from an existing resource group, to deploy the function, databases, and blob storage.
+

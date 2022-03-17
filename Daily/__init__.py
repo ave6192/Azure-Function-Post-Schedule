@@ -1,12 +1,14 @@
+from asyncio.windows_events import NULL
 import datetime
 from distutils.command.build_scripts import first_line_re
+from email import header
 import logging
 from operator import concat, le
 import re
 
 import azure.functions as func
 import requests
-
+from openpyxl import Workbook
 
 username = "mm_es_masteruser"
 password = "PrquqFN<b3aSw4h"
@@ -19,7 +21,9 @@ def main(mytimer: func.TimerRequest) -> None:
         logging.info('The timer is past due!')
 
     entries = getAllDigitalEntries()
+    upload(entries)
 
+    
 
     logging.info('Python timer trigger function ran at %s', utc_timestamp)
 
@@ -29,8 +33,9 @@ def getAllDigitalEntries():
     first_res = request(0, 20, _query)
     second_res = request(20, first_res[0]-20, _query)
 
+    
     allEntries = concat(first_res[1], second_res[1])
-
+    # allEntries = concat(first_res[1], [])
     return allEntries
 
 
@@ -54,6 +59,63 @@ def getTotal(json):
 
 def getEntries(json):
     return json["hits"]["hits"]
+
+
+def upload(entries):
+    workbook = NULL
+    if(True): #if file doesn't exist
+        workbook = createWorkSheet()
+    
+    workbook = appendWorkSheet(entries, workbook)
+
+    workbook.save(filename="hello_world.xlsx")
+
+
+def createWorkSheet():
+    workbook = Workbook()
+    sheet = workbook.active
+    headers = ["Id", "Name", "Sector", "Location", "Contract Type", "Job Description", "Job Url"]
+    sheet.append(headers)
+
+    return workbook   
+
+def appendWorkSheet(entries, workbook):
+    
+    sheet = workbook.active
+    for entry in entries:
+
+        id = entry["_id"]
+        title = entry["_source"]["title"]
+        sector = entry["_source"]["sector"][0]
+        location =  entry["_source"]["location"]
+        contract_type =  entry["_source"]["contractType"]
+        job_description =  entry["_source"]["pageText"]
+        job_url = entry["_source"]["url"]
+
+        new_row = [id, title, sector, location, contract_type, job_description, job_url]
+
+        if(not checkExists(entry, sheet)):
+            sheet.append(new_row)
+        
+    return workbook
+
+
+def checkExists(entry, sheet):
+    id = entry["_id"]
+    id_cells = list(sheet["A"])
+
+    for cell in id_cells:
+        if(cell.value == id):
+            return True
+    return False
+
+# def IsNewRow(idColumn, id):
+#     id_cells = list(idColumn)
+
+#     for cell in id_cells:
+#         if(cell.value == id):
+#             return False
+#     return True
 
 # 
 # def getResults(json):
