@@ -1,3 +1,44 @@
-1. Create an Azure function app like so:
+1. Create an Azure function app:
+
+2. In the function app, create an Identity for the function (steps 1 and 2 in the following link):
 
 https://techcommunity.microsoft.com/t5/apps-on-azure-blog/how-to-connect-azure-sql-database-from-python-function-app-using/ba-p/3035595
+
+
+3. Create a storage account, and in the Access keys grant the azure function identity permissions to write, delete, get secrets.
+
+4. Create a key vault.
+
+5. Store the the following as secrets in the key vault:
+
+STORAGEACCOUNTURL = "https://<STORAGE_ACCOUNT_NAME>.blob.core.windows.net"
+STORAGEACCOUNTKEY = "<STORAGE_ACCOUNT_KEY>"
+CONTAINERNAME = "<CONTAINER_NAME>"
+EXCELNAME = "<Name of the Excel>.xlsx"
+
+
+
+6. Give the function's identity created in step 2 GET permissions.
+Then add the Azure Key Vault's secrets in the function app's environment variables.
+
+Like in this link
+https://levelup.gitconnected.com/a-secure-way-to-use-credentials-and-secrets-in-azure-functions-7ec91813c807
+
+Make sure to store the url copied in the "Azure Key Vault Reference String" section like so:
+
+@Microsoft.KeyVault(SecretUri=<URL>)
+
+
+7. Fun part!:
+
+Create a function in VSCode like so, Where the template is  Daily, edit the relevant files and publish!
+
+https://docs.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-python
+
+
+These are the files
+Daily/__init__.py (app logic)
+Daily/function.json (sets trigger to 9:30am every day.)
+requirements.txt (packages)
+
+

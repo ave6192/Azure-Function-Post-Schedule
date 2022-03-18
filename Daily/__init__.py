@@ -6,12 +6,17 @@ import logging
 from operator import concat, le
 import re
 
+import os
+from io import BytesIO
 import azure.functions as func
 import requests
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
+from azure.storage.blob import BlobServiceClient, ContentSettings
 
 username = "mm_es_masteruser"
 password = "PrquqFN<b3aSw4h"
+
+
 
 def main(mytimer: func.TimerRequest) -> None:
     utc_timestamp = datetime.datetime.utcnow().replace(
@@ -20,8 +25,13 @@ def main(mytimer: func.TimerRequest) -> None:
     if mytimer.past_due:
         logging.info('The timer is past due!')
 
+    
+    myExcel, blob_client = getExcelFromSA()
+
     entries = getAllDigitalEntries()
-    upload(entries)
+
+    
+    upload(entries, myExcel, blob_client)
 
     
 
@@ -38,6 +48,24 @@ def getAllDigitalEntries():
     # allEntries = concat(first_res[1], [])
     return allEntries
 
+def getExcelFromSA():
+    STORAGEACCOUNTURL = os.getenv("STORAGEACCOUNTURL")
+    STORAGEACCOUNTKEY = os.getenv("STORAGEACCOUNTKEY")
+    CONTAINERNAME = os.getenv("CONTAINERNAME")
+    BLOBNAME = os.getenv("EXCELNAME")
+
+
+    blob_service_client_instance = BlobServiceClient(
+    account_url=STORAGEACCOUNTURL, credential=STORAGEACCOUNTKEY)
+
+    blob_client_instance = blob_service_client_instance.get_blob_client(
+        CONTAINERNAME, BLOBNAME, snapshot=None)
+    
+    if(blob_client_instance.exists()):
+        blob_data = blob_client_instance.download_blob()
+        data = blob_data.readall()
+        return data, blob_client_instance
+    return NULL, blob_client_instance
 
 
 def request(_from, _size, _query):
@@ -61,14 +89,19 @@ def getEntries(json):
     return json["hits"]["hits"]
 
 
-def upload(entries):
+def upload(entries, myExcel, blob_client):
+    file_name = os.getenv("EXCELNAME")
     workbook = NULL
-    if(True): #if file doesn't exist
+    if(myExcel is NULL): #if file doesn't exist
         workbook = createWorkSheet()
-    
+    else:
+        workbook = load_workbook(filename=BytesIO(myExcel))
     workbook = appendWorkSheet(entries, workbook)
+    
+    workbook.save(filename= file_name)
 
-    workbook.save(filename="hello_world.xlsx")
+    with open(file_name, "rb") as data:
+        blob_client.upload_blob(data, content_settings=ContentSettings(content_type='text/csv'), overwrite=True)
 
 
 def createWorkSheet():
@@ -108,22 +141,6 @@ def checkExists(entry, sheet):
         if(cell.value == id):
             return True
     return False
-
-# def IsNewRow(idColumn, id):
-#     id_cells = list(idColumn)
-
-#     for cell in id_cells:
-#         if(cell.value == id):
-#             return False
-#     return True
-
-# 
-# def getResults(json):
-#     list = json["hits"]["hits"]
-#     total = json["hits"]["total"]["value"]
-#     for hit in list:
-#         print(hit['_source']["title"])
-
 
 
 
