@@ -31,7 +31,7 @@ Make sure to store the url copied in the "Azure Key Vault Reference String" sect
 
 7. Fun part!:
 
-Create a function in VSCode like so, Where the template is  Daily, edit the relevant files and publish!
+Create a function in VSCode like so, Where the template is  Daily, edit the relevant files and publish to your function app!
 
 https://docs.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-python
 

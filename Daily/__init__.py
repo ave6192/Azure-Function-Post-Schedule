@@ -1,11 +1,7 @@
-from asyncio.windows_events import NULL
 import datetime
-from distutils.command.build_scripts import first_line_re
-from email import header
 import logging
 from operator import concat, le
-import re
-
+import tempfile
 import os
 from io import BytesIO
 import azure.functions as func
@@ -65,7 +61,7 @@ def getExcelFromSA():
         blob_data = blob_client_instance.download_blob()
         data = blob_data.readall()
         return data, blob_client_instance
-    return NULL, blob_client_instance
+    return None, blob_client_instance
 
 
 def request(_from, _size, _query):
@@ -91,17 +87,18 @@ def getEntries(json):
 
 def upload(entries, myExcel, blob_client):
     file_name = os.getenv("EXCELNAME")
-    workbook = NULL
-    if(myExcel is NULL): #if file doesn't exist
+    workbook = None
+    if(myExcel is None): #if file doesn't exist
         workbook = createWorkSheet()
     else:
         workbook = load_workbook(filename=BytesIO(myExcel))
     workbook = appendWorkSheet(entries, workbook)
     
-    workbook.save(filename= file_name)
+    full_file_name = tempfile.gettempdir() + "/" +file_name
+    workbook.save(filename= full_file_name)
 
-    with open(file_name, "rb") as data:
-        blob_client.upload_blob(data, content_settings=ContentSettings(content_type='text/csv'), overwrite=True)
+    with open(full_file_name, "rb") as data:
+        blob_client.upload_blob(data, content_settings=ContentSettings(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), overwrite=True)
 
 
 def createWorkSheet():
